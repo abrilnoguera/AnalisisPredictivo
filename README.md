@@ -13,3 +13,6 @@
   [Nicolas Belmonte](http://philogb.github.io/jit/)
   
   [Interactive Twitter](https://interactive.twitter.com)
+
+## Tarea 1
+  [Leer y Marcar conceptos nuevos](https://homes.cs.washington.edu/~jheer/files/zoo/)
