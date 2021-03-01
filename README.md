@@ -5,5 +5,6 @@
 
 ## gh-pages
 ### Cambio de URL
-  [antes:](https://github.com/abrilnoguera/infovis/blob/gh-pages/hola%20mundo.HTML)
+  [antes:](https://github.com/abrilnoguera/infovis/blob/gh-pages/holamundo.html)
+  
   [despues:](abrilnoguera.github.io/infovis/holamundo.html)
