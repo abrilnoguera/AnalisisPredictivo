@@ -1,0 +1,7 @@
+Visual encoding
+Exploratory data analysis
+Quantile-quantile plots
+Scatter plot matrix
+Parallel coordinates
+Adjacency diagrams
+Seriation
