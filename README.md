@@ -21,4 +21,4 @@
   [MakeOverMonday](https://www.makeovermonday.co.uk)
   
   ### Week 9
-  [Visualizacion MakeOverMonday - Week 9](https://public.tableau.com/views/MakeOverMonday-Week9/Dashboard1?:language=en&:display_count=y&publish=yes&:origin=viz_share_link)
+  [Visualizacion MakeOverMonday - Week 9](https://github.com/abrilnoguera/infovis/blob/8add627a9cb4fef48463a49c6c158a8b4993ec3b/MOM-W9.html)
