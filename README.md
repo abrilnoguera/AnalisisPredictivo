@@ -22,3 +22,6 @@
   
   ### Week 9
   [Visualizacion MakeOverMonday - Week 9](https://abrilnoguera.github.io/infovis/MOM-W9.html)
+
+  ### Week 11
+  [Visualizacion MakeOverMonday - Week 11](https://abrilnoguera.github.io/infovis/MOM-W11.html)
