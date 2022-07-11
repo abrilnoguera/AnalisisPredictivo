@@ -1,0 +1,381 @@
+---
+title: "Trabajo Practico Final"
+author: "Abril Noguera"
+output: html_notebook
+---
+
+Librerias:
+```{r}
+library(tidyverse)
+library(janitor)
+library(skimr)
+library(GGally)
+library(ggpubr)
+library(psych)
+library(funModeling)
+library(corrplot)
+library(naniar)
+library(tibble)
+library(tidyr)
+library(forcats)
+library(caret)
+library(viridisLite)
+library(misty)
+library(ggplot2)
+library(hrbrthemes)
+library(energy)
+library(vcd)
+library(rstatix)
+```
+
+La base de datos parte de una encuesta de inserción laboral de graduados universitarios españoles realizada por el Instituto Nacional de Estadística. Entonces, la población se basa en estos graduados de todo el territorio español, ya sea en universidades públicas o privadas, presenciales o virtuales. Pero, en el ámbito temporal, se tuvo en cuenta qué se tarda alrededor de tres años para estabilizarse laboralmente después de graduarse, por lo qué la encuesta se realizó en el 2019 con graduados del 2013 / 2014.
+
+
+```{r}
+grad = read.csv("Data/EILU_GRAD_2019.csv", sep = ";")
+```
+
+La encuesta abarca datos personales y sociodemográficos, de la educación y aprendizaje, de la movilidad del graduado, ya sea dentro del país o al exterior y de la situación laboral.
+
+El objetivo original del INE es conocer la situación laboral de los graduados universitarios. Por eso el objetivo de mi análisis, apoyando la metodología de la encuesta, se trata de predecir la inserción laboral de los graduados universitarios. Y estas son algunas preguntas disparadoras del análisis: 
+  - ¿Se puede predecir la inserción laboral? 
+  - ¿Los graduados ocupan puestos acordes a sus estudios? 
+  - ¿Existe un patrón que refleje el comportamiento laboral de los graduados? 
+  - ¿A mayor cantidad de estudios mayor sueldo? ¿La rama de estudios describe el sueldo? 
+  
+Voy a intentar responder estas preguntas a lo largo del analisis y así amoldar el modelo para qué sea representativo a el objetivo.
+
+Revise las variables y extraje aquellas qué me podrían interesar en una primera instancia. La base cuenta con todas variables categóricas, porque se trata de una encuesta con respuestas predeterminadas, algunas de ellas son nominales y otras ordinales. Las variables extraídas se pueden agrupar en 3 sectores, aquellas qué caracterízan en lo presonal al graduado, cómo la edad, el sexo, la nacionalidad, las qué describen sus estudios, cómo la rama de estudios, sí fue becado, su motivo de estudio, y las características laborales, su situación laboral y profesional, el nivel de formacion adecuado para realizar su trabajo, el área de estudio apropiada para su trabajo, entre otras.
+
+
+Variables Seleccionadas:
+SEXO	Sexo $categorica nominal$
+EDAD	Grupo de edad (a 31-dic-2019) $categorica ordinal$
+NACIO	Nacionalidad $categorica nominal$
+RAMA	Rama de conocimiento de la titulación $categorica nominal$
+T_UNIV	Tipo de Universidad $categorica nominal$
+DISCA	Tiene discapacidad reconocida superior al 33% $categorica nominal$
+LUG_RES_PAIS	País de residencia actual $categorica nominal$
+PAIS_NAC_PADRE	País de nacimiento del padre $categorica nominal$
+ESTUDIOS_PADRE	Nivel de formación máximo alcanzado por el padre $categorica ordinal$
+PAIS_NAC_MADRE	País de nacimiento de la madre $categorica nominal$
+ESTUDIOS_MADRE	Nivel de formación máximo alcanzado por la madre $categorica ordinal$
+EST_B1	Disfrutó de alguna beca durante sus estudios $categorica nominal$
+EST_M1	Realizó parte de sus estudios en el extranjero $categorica nominal$
+EST_B8	Motivo principal por el que ha realizado sus estudios $categorica nominal$
+SAT1	Si tuviese que empezar volvería a cursar estudios universitarios $categorica nominal$
+SAT2	Si tuviese que empezar volvería a estudiar la misma titulación $categorica nominal$
+EST_B11_1	Otros estudios: Grado / Diplomatura / Licenciatura o equivalente $categorica nominal$
+EST_B11_2	Otros estudios: Máster universitario $categorica nominal$
+EST_B11_3	Otros estudios: Doctorado universitario $categorica nominal$
+EST_B11_4	Otros estudios: Estudios artísticos superiores (artes plásticas, diseño, música y danza, arte dramático o conservación y restauración de bienes culturales) $categorica nominal$
+EST_B11_5	Otros estudios: Ciclos Formativos de grado superior (formación profesional, artes plásticas y diseño) o Enseñanzas Deportivas de Grado Superior $categorica nominal$
+EST_B11_6	Otros estudios: Ciclos Formativos de grado medio (formación profesional, artes plásticas y diseño) o Enseñanzas Deportivas de Grado Medio $categorica nominal$
+EST_B11_7	No ha completado ninguno de los estudios anteriores $categorica nominal$
+EST_B12 Nº de otros estudios: Grado / Diplomatura / Licenciatura o equivalente $categorica ordinal$
+IDIOMAS	Nº de idiomas que habla (sin contar los maternos) $categorica nominal$
+TIC	Capacidad para usar el ordenador u otros dispositivos informáticos $categorica nominal$
+MOV_IN Movilidad a otra provincia dentro de España tras finalizar los estudios $categorica nominal$
+MVFUERA Ha vivido fuera de España desde que se ha titulado / Ha vivido en otro país distinto del que reside actualmente/ Ha vivido en otro país distinto del que era su residencia antes de comenzar sus estudios $categorica nominal$
+TRBPRN1	Situación laboral actual $categorica nominal$
+SIT_PRO	Situación profesional actual $categorica nominal$
+TR_SUELDO Sueldo del Trabajador $categorica ordinal$
+TR_D19	Nivel de formación más apropiado para realizar el trabajo actual $categorica ordinal$
+TR_D20	Área de estudio más apropiada para el trabajo actual $categorica nominal$
+TR_D21	Se hace uso en el trabajo actual de los conocimientos y habilidades adquiridos en estos estudios $categorica ordinal$
+TR_D22_1	Factores para conseguir trabajo: los conocimientos teóricos $categorica ordinal$
+TR_D22_2	Factores para conseguir trabajo: las habilidades prácticas $categorica ordinal$
+TR_D22_3	Factores para conseguir trabajo: conocer idiomas $categorica ordinal$
+TR_D22_4	Factores para conseguir trabajo: la formación o el dominio de la informática y de las tecnologías de la información y la comunicación $categorica ordinal$
+TR_D22_5	Factores para conseguir trabajo: las competencias personales y sociales: personalidad, habilidades sociales, comunicación, capacidad de trabajar en grupo $categorica ordinal$
+TR_D22_6	Factores para conseguir trabajo: la capacidad de gestión, planificación y emprendimiento $categorica ordinal$
+TR_D23	Ha intentado conseguir otro trabajo remunerado en las últimas cuatro semanas $categorica nominal$
+HO_F1	Estado civil $categorica nominal$
+H0_TIPO Tipo de hogar $categorica nominal$
+
+```{r}
+df = grad %>% select(SEXO, EDAD, NACIO, RAMA, T_UNIV, DISCA, LUG_RES_PAIS, PAIS_NAC_PADRE, ESTUDIOS_PADRE, PAIS_NAC_MADRE, ESTUDIOS_MADRE, EST_B1, EST_M1, EST_B8, SAT1, SAT2, EST_B11_1, EST_B11_2, EST_B11_3, EST_B11_4, EST_B11_5, EST_B11_6, EST_B11_7,EST_B12, IDIOMAS, TIC, MOV_IN, MVFUERA, TRBPRN1, SIT_PRO, TR_SUELDO, TR_D19, TR_D20, TR_D21, TR_D22_1, TR_D22_2, TR_D22_3, TR_D22_4, TR_D22_5, TR_D22_6, TR_D23, HO_F1,HO_TIPO)
+```
+
+Para limpiar los registros vacíos se reconocieron dos casos, los vacíos porque la variable solo representa a un grupo de la población	y vacíos sin sentido. Por ejemplo, en el caso del sueldo este no va a completarse por un desempleado y por eso queda vacío. En estos casos se reemplazó los vacíos por el valor 0 qué representa a los desempleados. Los vacíos qué quedaban representaban menos del 1% de la base y, según la interpretación de faltantes del INe, se deben a errores en la toma de la encuesta. Por esas razones decidí eliminarlos de la base. No se encontraron valores inconsistentes, es decir, todas los registros respetan las categorías de las variables y tampoco existen outliers porque las categorías son predeterminadas.
+
+Se reemplazan los valores de NS/NC (9 y 99) por NA para estudiar la cantidad de vacios en la base.
+
+```{r}
+df  = replace_with_na_all(df, ~.x %in% c(9, 99))
+```
+
+```{r}
+df_status(df)
+```
+Se encuentra un 14,3% de vacios en la variable SIT_PRO (Situacion Profesional Actual). Al encontrarse parte de los encuestados desempleados no aplican a esta variable. Para recuperar esta situacion decido agregar el valor 0 a esta variable que represente a los desempleados.
+
+```{r}
+df = mutate_at(df, "SIT_PRO", ~replace(., is.na(.) & TRBPRN1 !=  1, 0))
+```
+
+Algo similar sucede con la variable EST_B12 (Cantidad de estudios realizados), al no contar el titulo por el que se graduaron el 76,55% que no hizo ningun estudio aparte del universitario no esta contemplado en la pregunta. Agrego el valor 0 en el caso de que el unico estudio que hayan hecho es por el que se graduaron.
+
+```{r}
+df = mutate_at(df, "EST_B12", ~replace(., is.na(.), 0))
+```
+
+Existiendo variables que caracterizan al empleado, se generan muchos vacios causados por los desempleados e inactivos. Agrego el valor 0 en el caso de que los graduados esten desempleados en el 2019.
+```{r}
+df = mutate_at(df, c("TR_SUELDO","TR_D19", "TR_D20", "TR_D21", "TR_D22_1", "TR_D22_2", "TR_D22_3", "TR_D22_4", "TR_D22_5", "TR_D22_6", "TR_D23"), ~replace(., is.na(.) & TRBPRN1 !=  1, 0))
+```
+
+Existen personas que si tuvieran que volver a empeazar sus estudios universitarios no lo harian (SAT1 = 2), por ende, tampoco estudiarian la misma carrera (SAT2 = 2).
+```{r}
+df = mutate_at(df, c("SAT2"), ~replace(., is.na(.), 2))
+```
+
+Todas las categorias como character.
+```{r}
+df = df %>% mutate_all(function(x) as.character(x))
+```
+
+Al no ser representativo la proporcion de NAs en la base decido eliminar los registros vacios.
+
+```{r}
+df = na.omit(df)
+df_status(df)
+```
+
+```{r}
+glimpse(df)
+```
+
+-----------------------------------------------------------------------------------------------------------------------------------------------
+Analisis Exploratorio:
+
+```{r}
+# Renombro Variables
+df = df %>% rename(BECA = EST_B1, EXTRANJERO = EST_M1, MOTIVO = EST_B8, VOLVERIA = SAT1, MISMA_CARRERA = SAT2, OTRO_GRADO = EST_B11_1, MASTER = EST_B11_2, DOCTORADO = EST_B11_3,EST_ARTIST = EST_B11_4, CICLO_SUP = EST_B11_5, CICLO_MED = EST_B11_6, OTROS_EST = EST_B11_7, NUM_EST = EST_B12, TECH = TIC, MV_ESP = MOV_IN, MV_FUE = MVFUERA, SIT_LABORAL = TRBPRN1, SIT_PROFESIONAL = SIT_PRO, EST_CIVIL = HO_F1, HOGAR = HO_TIPO, FORMAC_TR = TR_D19, RAMA_TR = TR_D20, F_TEOR_TR = TR_D22_1, F_PRAC_TR = TR_D22_2, F_IDIOM_TR = TR_D22_3, F_TECH_TR = TR_D22_4, F_PERSON_TR = TR_D22_5, F_GEST_TR = TR_D22_6, OTRO_TRAB = TR_D23, USO_ESTUD_TR = TR_D21)
+```
+
+
+```{r}
+df1 = df %>%  mutate(
+  BECA = ifelse(BECA == "1","Si", "No"), 
+  CICLO_MED = ifelse(CICLO_MED == "1","Si", "No"), 
+  CICLO_SUP = ifelse(CICLO_SUP == "1","Si", "No"), 
+  DISCA = ifelse(DISCA == "1","Si", "No"), 
+  DOCTORADO = ifelse(DOCTORADO == "1","Si", "No"), 
+  EST_ARTIST = ifelse(EST_ARTIST == "1","Si", "No"), 
+  EXTRANJERO = ifelse(EXTRANJERO == "1","Si", "No"), 
+  MASTER = ifelse(MASTER == "1","Si", "No"), 
+  VOLVERIA = ifelse(VOLVERIA == "1","Si", "No"), 
+  MISMA_CARRERA = ifelse(MISMA_CARRERA == "1","Si", "No"), 
+  MV_ESP = ifelse(MV_ESP == "1","Si", "No"), 
+  MV_FUE = ifelse(MV_FUE == "1","Si", "No"),
+  OTROS_EST = ifelse(OTROS_EST == "1","No", "Si"), 
+  OTRO_GRADO = ifelse(OTRO_GRADO == "1","Si", "No"), 
+  SEXO = ifelse(SEXO == "1","H", "M"), 
+  EDAD = case_when(EDAD == "1" ~ "1_<30", EDAD == "2" ~ "2_30-34",EDAD == "3" ~ "3_>=35"),
+  EST_CIVIL = case_when(EST_CIVIL == "1" ~ "1_S", EST_CIVIL == "2" ~ "2_C",EST_CIVIL == "3" ~ "3_V", EST_CIVIL == "4" ~ "4_SE", EST_CIVIL == "5" ~ "5_D"), 
+  ESTUDIOS_MADRE = case_when(ESTUDIOS_MADRE == "1" ~ "1_A", ESTUDIOS_MADRE == "2" ~ "2_PI",ESTUDIOS_MADRE == "3" ~ "3_PC", ESTUDIOS_MADRE == "4" ~ "4_S", ESTUDIOS_MADRE == "5" ~ "5_B", ESTUDIOS_MADRE == "6" ~ "6_PM", ESTUDIOS_MADRE == "7" ~ "7_PS", ESTUDIOS_MADRE == "8" ~ "8_U",ESTUDIOS_MADRE == "9" ~ "NS/NC"), 
+  ESTUDIOS_PADRE = case_when(ESTUDIOS_PADRE == "1" ~ "1_A", ESTUDIOS_PADRE == "2" ~ "2_PI",ESTUDIOS_PADRE == "3" ~ "3_PC", ESTUDIOS_PADRE == "4" ~ "4_S", ESTUDIOS_PADRE == "5" ~ "5_B", ESTUDIOS_PADRE == "6" ~ "6_PM", ESTUDIOS_PADRE == "7" ~ "7_PS", ESTUDIOS_PADRE == "8" ~ "8_U",ESTUDIOS_PADRE == "9" ~ "NS/NC"), 
+  HOGAR = case_when(HOGAR == "1" ~ "1_UNI", HOGAR == "2" ~ "2_ScH",HOGAR == "3" ~ "2_ScH", HOGAR == "4" ~ "3_PsH", HOGAR == "5" ~ "4_PcH", HOGAR == "6" ~ "4_PcH", HOGAR == "7" ~ "4_PcH", HOGAR == "8" ~ "5_Otr"), LUG_RES_PAIS = ifelse(LUG_RES_PAIS == "1", "E","O"),
+  MOTIVO = case_when(MOTIVO == 1 ~ "L", MOTIVO == "2" ~ "P", MOTIVO == "3" ~ "O"),NACIO = ifelse(NACIO == "3","O","E"),
+  OTRO_TRAB = case_when(OTRO_TRAB == "0" ~ "D",OTRO_TRAB == "1" ~ "Si", OTRO_TRAB == "2" ~ "Si", OTRO_TRAB == "3" ~ "No"),
+  PAIS_NAC_PADRE = ifelse(PAIS_NAC_PADRE == "3","O","E"), 
+  PAIS_NAC_MADRE = ifelse(PAIS_NAC_MADRE == "3","O","E"), 
+  RAMA = case_when(RAMA == "1" ~ "ART", RAMA == "2" ~ "CIE", RAMA == "3" ~ "CCSS",RAMA == "4" ~ "ING", RAMA == "5" ~ "SAL"), 
+  RAMA_TR = case_when(RAMA_TR == "1" ~ "Si", RAMA_TR == "2" ~ "Si",RAMA_TR == "3" ~ "No", RAMA_TR == "4" ~ "No", RAMA_TR == "0" ~ "D"),
+  SIT_LABORAL = case_when(SIT_LABORAL == "1" ~ "E", SIT_LABORAL == "2" ~ "D", SIT_LABORAL == "3" ~ "I"),
+  SIT_PROFESIONAL = case_when(SIT_PROFESIONAL == "1" ~ "P", SIT_PROFESIONAL == "2" ~ "TP", SIT_PROFESIONAL == "3" ~ "TT", SIT_PROFESIONAL == "4" ~ "E", SIT_PROFESIONAL == "5" ~ "TI", SIT_PROFESIONAL == "6" ~ "F", SIT_PROFESIONAL == "0" ~ "D"),
+  T_UNIV = case_when(T_UNIV == "1" ~ "PuP",T_UNIV == "2" ~ "PuV",T_UNIV == "3" ~ "PrP", T_UNIV == "4" ~ "PrV"),
+  TECH = case_when(TECH == "1" ~ "1_B",TECH == "2" ~ "2_M", TECH == "3" ~ "3_A"),
+  TR_SUELDO = case_when(TR_SUELDO == "0" ~ "0_D",TR_SUELDO == "1" ~ "1_<700",TR_SUELDO == "2" ~ "2_700-999",TR_SUELDO == "3" ~ "3_1000-1499",TR_SUELDO == "4" ~ "4_1500-1999",TR_SUELDO == "5" ~ "5_2000-2499",TR_SUELDO == "6" ~ "6_2500-2999",TR_SUELDO == "7" ~ "7_>3000"),
+  USO_ESTUD_TR = case_when(USO_ESTUD_TR == "0" ~ "D",USO_ESTUD_TR == "1" ~ "Si", USO_ESTUD_TR == "2" ~ "No")
+  )
+
+```
+
+Graficamos la distribución de cada variable por separado: 
+
+```{r}
+# Distribuciones
+df_dist = df1 %>% select(-c("CICLO_MED","CICLO_SUP", "DOCTORADO","EST_ARTIST","F_GEST_TR","F_IDIOM_TR","F_PERSON_TR","F_PRAC_TR", "F_TECH_TR","F_TEOR_TR","FORMAC_TR","MASTER", "OTRO_GRADO", "OTROS_EST"))
+
+id_cols = colnames(df_dist)
+gdat = df_dist %>% 
+  pivot_longer(all_of(id_cols), names_to="variable", values_to="value")
+
+ gdat = gdat %>% group_by(variable, value) %>% summarise(n = n())
+
+ggplot(data=gdat, aes(x=n,y= value)) +
+  geom_bar(stat="identity", fill="red", alpha=0.5) +
+  facet_wrap(~variable, scales = "free") +
+  theme(axis.text.x = element_text(angle=90)) +
+  theme_minimal()
+
+```
+
+Estudiando la distribución de las variables, las qué me interesa resaltar son: el motivo por el qué estudiaron la carrera de la mayoría fue laboral. La gran mayoría de las carreras se encuentran en la rama de ciencias sociales y jurídicas, con una distribución bastante pareja del resto de las ramas. Y con respecto a la situación laboral, la mayoría se encuentra empleado. Pero hay dos variables qué especialmente me llaman la atención, RAMA_TR qué contempla sí el trabajo realizado tiene relación con la rama de estudios de la qué se recibieron y sí usa sus estudios en el trabajo. Se pueden ver alrededor de 15000 personas en el sí y 5000 personas en el no en ambas categorías, alrededor de ¼ de la población empleada.
+
+Correlacion:  
+
+Analice las correlaciones entre las variables. Primero, donde existe correlación es positiva. A simple vista podemos ver qué las variables laborales tienen correlación entre sí, tal vez se intensificó al normalizar a los desempleados en todas ellas. y también parece tener algo de correlación sí volverían a estudiar con la situación laboral.
+
+Como las variables son categoricas uso Chi-cuadrado. Se usa el estadistico V de Cramer y Distance Correlation para medir la dependencia entre los atributos de las variables categoricas. 
+```{r}
+# V de Cramer
+# Initialize empty matrix to store coefficients
+empty_m <- matrix(ncol = length(df),
+            nrow = length(df),
+            dimnames = list(names(df), 
+                            names(df)))
+# Function that accepts matrix for coefficients and data and returns a correlation matrix
+calculate_cramer <- function(m, df) {
+ for (r in seq(nrow(m))){
+   for (c in seq(ncol(m))){
+     m[[r, c]] <- assocstats(table(df[[r]], df[[c]]))$cramer
+   }
+ }
+    return(m)
+}
+
+cor_matrix <- calculate_cramer(empty_m,df)
+
+corrplot(cor_matrix)
+```
+
+-----------------------------------------------------------------------------------------------------------------------------------------------
+
+Probabilidad de incersion laboral:
+
+Volviendo con las variables qué llamaron la atención anteriormente y repasando nuestro objetivo: predecir el comportamiento laboral de los graduados universitarios. Me surgió está pregunta: ¿Nos interesa un graduado empleado pero qué no aplique su título? Pensándolo, ¿qué sentido tiene estudiar la inserción laboral de graduados universitarios sí no van a aplicar sus estudios? 
+
+```{r}
+# Tasa de Actividad
+paste0("Tasa de Actividad: ",round(count(df %>% filter(SIT_LABORAL == 1))*100 / count(df),2),"%")
+# Tasa de Desempleo
+paste0("Tasa de Desempleo: ",round(count(df %>% filter(SIT_LABORAL == 2))*100 / count(df),2),"%")
+# Tasa de Inactividad 
+paste0("Tasa de Inactividad: ",round(count(df %>% filter(SIT_LABORAL == 3))*100 / count(df),2),"%")
+```
+
+Por eso definí, empleado productivo, cómo aquel graduado actualmente empleado que aplica sus estudios universitarios en su área en el trabajo al que se dedica. Y la proporción ahora es mucho más cercana, siendo el 57.3% los empleados productivos y el otro 42,7% los qué no.
+
+```{r}
+# Variable Target: empleado productivo.
+# Es empleado productivo aquel graduado que aplica sus estudios universitarios en su area en el trabajo al que se dedica.
+
+df%>% group_by(SIT_LABORAL, RAMA_TR, USO_ESTUD_TR) %>% summarise(n = n())
+
+df1 = df1 %>% mutate(EMPLEADO_PRODUCTIVO = ifelse(SIT_LABORAL == "E" & RAMA_TR == "Si" & USO_ESTUD_TR == "Si", "Si","No"))
+df = df %>% mutate(EMPLEADO_PRODUCTIVO = ifelse(df1$EMPLEADO_PRODUCTIVO =="Si", "1","2"))
+
+
+df1 %>% group_by(EMPLEADO_PRODUCTIVO) %>% summarise(p = n() * 100 /nrow(df))
+
+ggplot(data=df1 %>% group_by(EMPLEADO_PRODUCTIVO) %>% summarise(p = n() / nrow(df)), aes(x=p,y= EMPLEADO_PRODUCTIVO)) +
+  geom_bar(stat="identity", fill="pink") +
+  theme(axis.text.x = element_text(angle=90)) +
+  xlab("")+
+  ylab("Es empleado productivo?")+
+  theme_minimal()
+
+
+```
+
+Volvemos a analizar las correlaciones, pero ahora con la nueva variable. Otra vez, las variables laborales son las qué mayor correlación presentan. Pero hay qué tener cuidado con esto, porque también son las qué componen a la variable. Aparte de estas variables, presentan algo de correlación la rama de estudios y las respuesta a sí volvería a hacer estudios universitarios sí tuviese la oportunidad y en ese caso sí volvería a hacer la carrera por la qué se recibieron. Por eso, las vamos a ver con más detenimiento. En el caso de la rama de estudios, las ciencias parecen tener una proporción parecida en empleados productivos y no. Las carreras de la salud, ingenierías y arquitectura tienen mayor proporción de empleados productivos. Pero, las artísticas y humanidades lo contrario. Para los qué volverían a estudiar y volverían a estudiar la misma carrera pasa algo similar. Los qué dicen qué no generalmente son lo qué no tienen un empleo productivo, y los qué dicen qué sí los qué sí.
+
+```{r}
+empty_m <- matrix(ncol = length(df1),
+            nrow = 1,
+            dimnames = list("EMPLEADO_PRODUCTIVO", 
+                            names(df1)))
+for (c in seq(ncol(empty_m))){
+     empty_m[[1, c]] <- assocstats(table(df1$EMPLEADO_PRODUCTIVO, df1[[c]]))$cramer
+ }
+
+corrplot(empty_m)
+```
+
+Repasando un poco, hasta ahora respondimos a una de las preguntas disparadoras: ¿Los graduados ocupan puestos acordes a sus estudios? y vimos qué es casi proporcional los qué sí qué los qué no. Buscamos qué el modelo predictivo responda sí se puede predecir la inserción laboral y sí existe un patrón qué describa el comportamiento de los graduados. Pero aún nos quedan otras dos preguntas por responder.
+
+```{r}
+# Empleado productivo con rama
+ggplot(df1, aes(x = EMPLEADO_PRODUCTIVO, y = RAMA)) +
+geom_count() +
+theme_minimal()
+
+# Empleado productivo con volveria
+ggplot(df1, aes(x = EMPLEADO_PRODUCTIVO, y = VOLVERIA)) +
+geom_count() +
+theme_minimal()
+
+# Empleado productivo con misma carrera
+ggplot(df1, aes(x = EMPLEADO_PRODUCTIVO, y = MISMA_CARRERA)) +
+geom_count() +
+theme_minimal()
+```
+
+Se quisiera pensar qué a más estudios tengamos más vamos a recibir cómo sueldo… las correlación no dicen lo mismo. Primero la de spearman, qué es posible por ser ambas variables categóricas ordinales, siendo del 14% y la de cramer del 10%. Sí lo analizamos verticalmente podemos ver qué a mayor sueldo menos rojos existen. Pero no se ve claro una distribución de más empleados productivos a mayor cantidad de estudios haya hecho. Es más, justo los mayores sueldos y mayor cantidad de estudios no son trabajos productivos. Puede ser por qué estudiaron más de una carrera universitaria y no se dedicaron a la primera qué hicieron (o son narcos jajaj).
+
+```{r}
+df = df %>% mutate_all(function(x) as.integer(x))
+
+# ¿A mayor cantidad de estudios mayor sueldo?
+ggplot(df1) +
+  geom_jitter(aes(NUM_EST, TR_SUELDO,col = EMPLEADO_PRODUCTIVO), alpha = 0.5) 
+
+cor(df$NUM_EST, df$TR_SUELDO, method="spearman")
+
+cramer_v(table(df$NUM_EST, df$TR_SUELDO))
+```
+¿La rama de estudios describe el sueldo? nuevamente hay una baja correlación del 15%. Se puede ver qué en ramas cómo las ingenierías y las de salud los qué más ganan se dedican a ellas, pero en las áreas artísticas o de humanidades los qué más ganan se dedican a otra cosa.
+
+```{r}
+# ¿La rama de estudios describe al sueldo?
+ggplot(df1) +
+  geom_jitter(aes(RAMA, TR_SUELDO,col = EMPLEADO_PRODUCTIVO), alpha = 0.5) 
+
+cramer_v(table(df$RAMA, df$TR_SUELDO))
+```
+
+
+Particion de la Base:
+
+Ahora sí, planteó las bases del modelo predictivo del comportamiento laboral de los graduados universitarios. La variable target va a ser la definida: empleado productivo. Por eso se trata de un modelo de clasificación, al tratarse de agrupar variables en estas dos categorías. Se destina un 80% a entrenamiento y  la metodología de partición de la base es la estratificada, pero no lo hago por la variable target ya qué ya está bastante proporcional, lo hago por la rama de estudios porque cómo vimos antes es una de las variables más correlacionadas pero tiene muy mala distribución en la base.  
+
+```{r}
+# DEBERIA USAR STRATIFIED SPLIT PARA QUE TODAS LAS CATEGORIAS QUEDEN BIEN REPRESENTADAS.
+seed = 42
+set.seed(seed)
+t <- createDataPartition(df1$RAMA, p = .80, list = FALSE, times = 1)
+
+# Split the dataset using the defined partition
+df_tr <- df1[t, ,drop=FALSE]
+df_va<- df1[-t, ,drop=FALSE]
+```
+
+```{r}
+# Chequeo distribucion de la variable target:
+ggplot(data=df_tr %>% group_by(EMPLEADO_PRODUCTIVO) %>% summarise(p = n() / nrow(df_tr)), aes(x=p,y= EMPLEADO_PRODUCTIVO)) +
+  geom_bar(stat="identity", fill="pink") +
+  theme(axis.text.x = element_text(angle=90)) +
+  xlab("")+
+  ylab("Es empleado productivo?")+
+  theme_minimal()
+
+# Chequeo distribucion de la rama:
+ggplot(data=df_tr %>% group_by(RAMA) %>% summarise(p = n() / nrow(df_tr)), aes(x=p,y= RAMA)) +
+  geom_bar(stat="identity", fill="pink") +
+  theme(axis.text.x = element_text(angle=90)) +
+  theme_minimal()
+
+```
+
+De ahora en mas, para el analisis del modelo predictivo pasare a utilizar Python. Para eso, descargo ambas bases, la de entrenamiento y la de validacion.
+
+```{r}
+write.csv(df_tr, "Data/df_tr.csv")
+```
+
+```{r}
+write.csv(df_va, "Data/df_va.csv")
+```
